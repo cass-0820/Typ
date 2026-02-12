@@ -67,7 +67,7 @@
             background-image: radial-gradient(#d0d0d0 1.5px, transparent 1.5px);
             background-attachment: local;
             background-size: 24px 24px;
-            overflow: auto;
+            overflow: auto; 
             -webkit-overflow-scrolling: touch;
         }
         
@@ -149,7 +149,7 @@
 
         /* 캔버스 툴바 */
         .canvas-toolbar {
-            position: fixed;
+            position: fixed; 
             top: 60px; left: 50%; transform: translateX(-50%);
             background: white; padding: 8px 24px; border-radius: 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; gap: 15px; z-index: 200;
@@ -188,12 +188,13 @@
             transition: all 0.2s;
         }
         .icon-btn:hover { background-color: rgba(0,0,0,0.05); color: #000; }
-        /* 위험 버튼 (초기화) */
-        .icon-btn.danger { color: #d32f2f; }
-        .icon-btn.danger:hover { background-color: #ffebee; }
-        
         .icon-btn.active { background-color: #e3f2fd; color: #1565c0; }
         .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+        
+        /* 삭제 버튼 전용 스타일 */
+        #btnResetAll { color: #d32f2f; }
+        #btnResetAll:hover { background-color: #ffebee; color: #b71c1c; }
+
         .sep { width: 1px; height: 14px; background: #ddd; }
 
         .stats-info {
@@ -259,16 +260,16 @@
                 <div class="btn-row">
                     <button class="icon-btn" id="btnSaveJson" title="저장"><svg viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg></button>
                     <button class="icon-btn" id="btnLoadJson" title="불러오기"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></button>
-                    <div class="sep"></div>
-                    <button class="icon-btn danger" id="btnResetAll" title="전체 초기화"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                    <button class="icon-btn" id="btnResetAll" title="모두 삭제(초기화)" onclick="resetAllData()"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
                     <div class="sep"></div>
                     <button class="icon-btn" id="btnPreview" title="미리보기"><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
                 </div>
+
                 <div class="btn-row" style="margin-top:5px;">
-                     <button class="icon-btn" id="btnSymbol" title="특수문자" style="width:100%"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                     <button class="icon-btn" id="btnSymbol" title="특수문자" style="flex:1"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
                      <div class="sep"></div>
-                     <button class="icon-btn" id="btnUndo" title="취소"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
-                     <button class="icon-btn" id="btnRedo" title="다시"><svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg></button>
+                     <button class="icon-btn" id="btnUndo" title="실행 취소"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
+                     <button class="icon-btn" id="btnRedo" title="다시 실행"><svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg></button>
                 </div>
 
                 <div class="symbol-palette" id="symbolPalette"></div>
@@ -344,6 +345,23 @@
         };
     }
 
+    // === 데이터 완전 초기화 함수 ===
+    function resetAllData() {
+        if(confirm('⚠️ 경고: 모든 데이터(사진, 글)가 영구적으로 삭제됩니다.\n정말로 초기화 하시겠습니까?')) {
+            // IndexedDB 삭제
+            const req = indexedDB.deleteDatabase(DB_NAME);
+            req.onsuccess = () => {
+                // LocalStorage 삭제 (혹시 모를 잔여 데이터)
+                localStorage.removeItem('my_project_v3_layer_dots');
+                alert('초기화 되었습니다.');
+                location.reload(); // 새로고침
+            };
+            req.onerror = () => {
+                alert('초기화 실패. 브라우저 설정을 확인해주세요.');
+            };
+        }
+    }
+
     function resetPages() { pages = [{ title: '🎨 비주얼 보드', type: 'canvas', content: [] }, { title: '📝 설정 노트', type: 'text', content: '# 프로젝트 설정\n' }]; }
 
     function saveAll() {
@@ -362,23 +380,6 @@
         req.onsuccess = () => { setTimeout(() => { saveIndicator.classList.remove('saving'); }, 500); };
         req.onerror = () => { saveIndicator.classList.remove('saving'); };
     }
-
-    // === 전체 초기화 기능 ===
-    document.getElementById('btnResetAll').onclick = () => {
-        if(confirm('🚨 경고: 모든 데이터(메모, 사진)가 영구적으로 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.\n\n정말 초기화 하시겠습니까?')) {
-            // DB 삭제
-            const req = indexedDB.deleteDatabase(DB_NAME);
-            req.onsuccess = () => {
-                // 구버전 로컬스토리지 데이터도 삭제
-                localStorage.removeItem('my_project_v3_layer_dots');
-                alert('초기화 완료. 페이지를 새로고침 합니다.');
-                location.reload();
-            };
-            req.onerror = () => {
-                alert('초기화 중 오류가 발생했습니다. 브라우저 설정을 확인해주세요.');
-            };
-        }
-    };
 
     function renderTabs() {
         document.querySelectorAll('.tab-item').forEach(e => e.remove());
@@ -419,23 +420,19 @@
 
     function renderCanvasItems() {
         const existing = canvasArea.querySelectorAll('.item'); existing.forEach(e => e.remove());
-        
         canvasItems.forEach(item => {
             const el = document.createElement('div');
             el.className = `item ${item.id === selectedId ? 'selected' : ''}`;
             el.id = `item-${item.id}`;
             el.setAttribute('data-title', item.title || "");
-            
             el.style.left = item.x + 'px'; el.style.top = item.y + 'px';
             el.style.width = item.width + 'px'; el.style.height = item.type === 'image' ? 'auto' : item.height + 'px';
             el.style.background = item.type === 'memo' ? item.color : 'transparent';
             el.style.zIndex = item.zIndex || 1;
-            
             if(item.type === 'memo') el.style.padding = '20px';
             
             const startHandler = (e) => handleCanvasStart(e, item, el);
-            el.onmousedown = startHandler; 
-            el.ontouchstart = startHandler;
+            el.onmousedown = startHandler; el.ontouchstart = startHandler;
 
             let html = '';
             html += `<div class="config-panel" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
