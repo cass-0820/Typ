@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <title>프로젝트 비주얼 보드 (Context UI Ver.)</title>
+    <title>프로젝트 비주얼 보드 (Clean ToolBox)</title>
     <style>
         /* === 기본 스타일 === */
         body {
@@ -157,9 +157,10 @@
         .canvas-btn { background: none; border: none; font-weight: bold; font-size: 14px; cursor: pointer; color: #444; }
         .canvas-btn:hover { color: #1565c0; }
 
-        /* === Tool Box === */
+        /* === Tool Box (스타일 수정) === */
         .floating-panel {
-            position: absolute; top: 20px; right: 20px; width: 260px;
+            position: absolute; top: 20px; right: 20px; width: auto; /* 너비 자동 */
+            min-width: 200px; /* 최소 너비 설정 */
             background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(5px);
             border: 1px solid rgba(0,0,0,0.1); border-radius: 12px;
@@ -169,7 +170,7 @@
         }
         .floating-panel:hover { opacity: 1 !important; }
         .floating-panel.faded { opacity: 0.2; }
-        .floating-panel.minimized { height: 34px; overflow: hidden; opacity: 0.7; width: 120px; }
+        .floating-panel.minimized { height: 34px; overflow: hidden; opacity: 0.7; width: 120px; min-width: 120px; }
         .floating-panel.minimized .panel-content { display: none; }
 
         .panel-header {
@@ -180,12 +181,20 @@
         .panel-header button { border: none; background: none; font-weight: bold; cursor: pointer; color: #777; font-size: 14px; }
         .panel-content { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 
-        .btn-row { display: flex; justify-content: space-around; align-items: center; }
+        /* 아이콘 버튼 가로 정렬 및 간격 조정 */
+        .btn-row { 
+            display: flex; 
+            justify-content: flex-start; /* 왼쪽 정렬 */
+            align-items: center; 
+            flex-wrap: nowrap; /* 줄바꿈 방지 */
+            gap: 5px; /* 아이콘 간격 */
+        }
         .icon-btn {
             background: transparent; border: none; cursor: pointer;
             padding: 6px; border-radius: 6px; color: #555;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s;
+            margin: 0; /* 기본 마진 제거 */
         }
         .icon-btn:hover { background-color: rgba(0,0,0,0.05); color: #000; }
         .icon-btn.active { background-color: #e3f2fd; color: #1565c0; }
@@ -194,7 +203,7 @@
         #btnResetAll { color: #d32f2f; }
         #btnResetAll:hover { background-color: #ffebee; color: #b71c1c; }
 
-        .sep { width: 1px; height: 14px; background: #ddd; }
+        .sep { width: 1px; height: 18px; background: #ddd; margin: 0 5px; } /* 구분선 높이 및 간격 조정 */
 
         .stats-info {
             background-color: #f9f9f9; padding: 10px; border-radius: 8px;
@@ -264,12 +273,10 @@
                     
                     <div class="sep"></div>
                     <button class="icon-btn" id="btnPreview" title="미리보기"><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
-                </div>
 
-                <div class="btn-row" style="margin-top:5px;">
-                     <button class="icon-btn" id="btnSymbol" title="특수문자" style="flex:1"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
-                     
-                     <div class="sep" id="undoSep"></div>
+                    <div class="sep" id="undoSep"></div>
+
+                     <button class="icon-btn" id="btnSymbol" title="특수문자"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
                      
                      <button class="icon-btn" id="btnUndo" title="실행 취소"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
                      <button class="icon-btn" id="btnRedo" title="다시 실행"><svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg></button>
@@ -409,6 +416,7 @@
         const btnRedo = document.getElementById('btnRedo');
         const btnResetAll = document.getElementById('btnResetAll');
         const undoSep = document.getElementById('undoSep');
+        const btnSymbol = document.getElementById('btnSymbol'); // 특수문자 버튼
 
         if (idx === 0) {
             // === 비주얼 보드 모드 ===
@@ -416,10 +424,11 @@
             document.querySelector('.stats-info').style.display = 'none'; 
             
             // 버튼 상태 제어
-            btnResetAll.style.display = 'flex'; // 초기화 버튼 보이기
-            btnUndo.style.display = 'none';     // 실행취소 숨기기
-            btnRedo.style.display = 'none';     // 다시실행 숨기기
-            if(undoSep) undoSep.style.display = 'none'; // 구분선 숨기기
+            btnResetAll.style.display = 'flex'; 
+            btnUndo.style.display = 'none';     
+            btnRedo.style.display = 'none';     
+            if(undoSep) undoSep.style.display = 'none'; 
+            btnSymbol.style.display = 'none'; // 비주얼 보드에서 특수문자 숨김
 
             canvasItems = pages[0].content || []; renderCanvasItems();
         } else {
@@ -428,10 +437,11 @@
             document.querySelector('.stats-info').style.display = 'flex';
             
             // 버튼 상태 제어
-            btnResetAll.style.display = 'none'; // 초기화 버튼 숨기기
-            btnUndo.style.display = 'flex';     // 실행취소 보이기
-            btnRedo.style.display = 'flex';     // 다시실행 보이기
-            if(undoSep) undoSep.style.display = 'block'; // 구분선 보이기
+            btnResetAll.style.display = 'none'; 
+            btnUndo.style.display = 'flex';     
+            btnRedo.style.display = 'flex';     
+            if(undoSep) undoSep.style.display = 'block'; 
+            btnSymbol.style.display = 'flex'; // 텍스트 에디터에서 특수문자 보임
 
             textInput.value = pages[idx].content || ''; updateCounts();
         }
