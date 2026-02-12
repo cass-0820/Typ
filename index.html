@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <title>프로젝트 비주얼 보드 (Reset Ver.)</title>
+    <title>프로젝트 비주얼 보드 (Context UI Ver.)</title>
     <style>
         /* === 기본 스타일 === */
         body {
@@ -191,7 +191,6 @@
         .icon-btn.active { background-color: #e3f2fd; color: #1565c0; }
         .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
         
-        /* 삭제 버튼 전용 스타일 */
         #btnResetAll { color: #d32f2f; }
         #btnResetAll:hover { background-color: #ffebee; color: #b71c1c; }
 
@@ -260,14 +259,18 @@
                 <div class="btn-row">
                     <button class="icon-btn" id="btnSaveJson" title="저장"><svg viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg></button>
                     <button class="icon-btn" id="btnLoadJson" title="불러오기"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></button>
+                    
                     <button class="icon-btn" id="btnResetAll" title="모두 삭제(초기화)" onclick="resetAllData()"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                    
                     <div class="sep"></div>
                     <button class="icon-btn" id="btnPreview" title="미리보기"><svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></button>
                 </div>
 
                 <div class="btn-row" style="margin-top:5px;">
                      <button class="icon-btn" id="btnSymbol" title="특수문자" style="flex:1"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
-                     <div class="sep"></div>
+                     
+                     <div class="sep" id="undoSep"></div>
+                     
                      <button class="icon-btn" id="btnUndo" title="실행 취소"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
                      <button class="icon-btn" id="btnRedo" title="다시 실행"><svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg></button>
                 </div>
@@ -348,13 +351,11 @@
     // === 데이터 완전 초기화 함수 ===
     function resetAllData() {
         if(confirm('⚠️ 경고: 모든 데이터(사진, 글)가 영구적으로 삭제됩니다.\n정말로 초기화 하시겠습니까?')) {
-            // IndexedDB 삭제
             const req = indexedDB.deleteDatabase(DB_NAME);
             req.onsuccess = () => {
-                // LocalStorage 삭제 (혹시 모를 잔여 데이터)
                 localStorage.removeItem('my_project_v3_layer_dots');
                 alert('초기화 되었습니다.');
-                location.reload(); // 새로고침
+                location.reload(); 
             };
             req.onerror = () => {
                 alert('초기화 실패. 브라우저 설정을 확인해주세요.');
@@ -402,13 +403,36 @@
 
     function loadPage(idx) {
         isPreviewMode = false; markdownPreview.style.display = 'none'; textInput.style.display = 'block'; btnPreview.classList.remove('active');
+        
+        // Tool Box 버튼 요소들 가져오기
+        const btnUndo = document.getElementById('btnUndo');
+        const btnRedo = document.getElementById('btnRedo');
+        const btnResetAll = document.getElementById('btnResetAll');
+        const undoSep = document.getElementById('undoSep');
+
         if (idx === 0) {
+            // === 비주얼 보드 모드 ===
             textEditorArea.style.display = 'none'; canvasArea.style.display = 'block'; btnPreview.style.display = 'none';
             document.querySelector('.stats-info').style.display = 'none'; 
+            
+            // 버튼 상태 제어
+            btnResetAll.style.display = 'flex'; // 초기화 버튼 보이기
+            btnUndo.style.display = 'none';     // 실행취소 숨기기
+            btnRedo.style.display = 'none';     // 다시실행 숨기기
+            if(undoSep) undoSep.style.display = 'none'; // 구분선 숨기기
+
             canvasItems = pages[0].content || []; renderCanvasItems();
         } else {
+            // === 텍스트 에디터 모드 ===
             canvasArea.style.display = 'none'; textEditorArea.style.display = 'block'; btnPreview.style.display = 'flex';
             document.querySelector('.stats-info').style.display = 'flex';
+            
+            // 버튼 상태 제어
+            btnResetAll.style.display = 'none'; // 초기화 버튼 숨기기
+            btnUndo.style.display = 'flex';     // 실행취소 보이기
+            btnRedo.style.display = 'flex';     // 다시실행 보이기
+            if(undoSep) undoSep.style.display = 'block'; // 구분선 보이기
+
             textInput.value = pages[idx].content || ''; updateCounts();
         }
     }
