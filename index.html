@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎨</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <title>프로젝트 비주얼 보드 (DB Ver.)</title>
+    <title>프로젝트 비주얼 보드 (Scroll Ver.)</title>
     <style>
         /* === 기본 스타일 === */
         body {
@@ -22,6 +22,7 @@
         .top-nav {
             height: 45px; background-color: #e9ecef; display: flex; align-items: flex-end;
             padding: 0 10px; overflow-x: auto; flex-shrink: 0; border-bottom: 1px solid #ccc; gap: 2px;
+            z-index: 1000; /* 탭이 항상 위에 오도록 */
         }
         .top-nav::-webkit-scrollbar { height: 4px; }
         .top-nav::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
@@ -59,14 +60,23 @@
         #markdownPreview blockquote { border-left: 4px solid #ddd; padding-left: 1em; color: #666; }
         #markdownPreview img { max-width: 100%; border-radius: 8px; }
 
-        /* B. 비주얼 보드 */
+        /* B. 비주얼 보드 (스크롤 가능하도록 수정됨) */
         #canvasArea {
             display: none; width: 100%; height: 100%; position: relative;
             background-color: #fdfdfd;
             background-image: radial-gradient(#d0d0d0 1.5px, transparent 1.5px);
+            background-attachment: local; /* 중요: 스크롤 시 배경 패턴도 같이 이동 */
             background-size: 24px 24px;
-            overflow: hidden; user-select: none;
-            touch-action: none; /* 중요: 브라우저 기본 터치 동작 방지 */
+            
+            overflow: auto; /* 스크롤 활성화 */
+            /* touch-action: none;  <-- 삭제: 배경 터치 시 스크롤 되도록 허용 */
+            -webkit-overflow-scrolling: touch; /* 부드러운 스크롤 */
+        }
+        
+        /* 캔버스 높이 확보용 (보이지 않는 요소) */
+        #canvasSizer {
+            position: absolute; top: 0; left: 0; width: 1px; height: 3000px; /* 기본 3000px 높이 확보 */
+            pointer-events: none; z-index: -1;
         }
 
         /* 캔버스 아이템 */
@@ -76,7 +86,8 @@
             border-radius: 6px; display: flex; flex-direction: column; 
             box-sizing: border-box; cursor: grab; transition: box-shadow 0.2s, border 0.1s;
             padding: 15px; overflow: visible !important;
-            /* 모바일 최적화 스타일 */
+            
+            /* 아이템 내부에서는 스크롤 방지 (드래그 위해) */
             touch-action: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
@@ -114,7 +125,7 @@
         }
         .item img { 
             width: 100%; height: 100%; object-fit: contain; border-radius: 4px;
-            pointer-events: none; /* 이미지 자체의 드래그 방지 */
+            pointer-events: none; 
             -webkit-user-drag: none;
         }
 
@@ -141,10 +152,12 @@
         }
         .item.selected .resize-handle { display: block; }
 
+        /* 캔버스 툴바 (화면 상단 고정) */
         .canvas-toolbar {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            position: fixed; /* 절대 위치 대신 고정 위치로 변경 */
+            top: 60px; left: 50%; transform: translateX(-50%);
             background: white; padding: 8px 24px; border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; gap: 15px; z-index: 90;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; gap: 15px; z-index: 200; /* Z-Index 높임 */
         }
         .canvas-btn { background: none; border: none; font-weight: bold; font-size: 14px; cursor: pointer; color: #444; }
         .canvas-btn:hover { color: #1565c0; }
@@ -200,7 +213,7 @@
         .toast { visibility: hidden; min-width: 200px; background-color: rgba(40, 40, 40, 0.95); color: #fff; text-align: center; border-radius: 50px; padding: 12px 24px; position: fixed; z-index: 1000; left: 50%; bottom: 40px; transform: translateX(-50%); font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
         .toast.show { visibility: visible; opacity: 1; bottom: 60px; }
 
-        /* === [추가 기능] 저장 표시기 === */
+        /* 저장 표시기 */
         #saveIndicator {
             position: fixed; bottom: 15px; right: 15px;
             background-color: rgba(0, 0, 0, 0.6); color: white;
@@ -226,6 +239,8 @@
 
     <div class="main-container">
         <div id="canvasArea">
+            <div id="canvasSizer"></div>
+
             <div class="canvas-toolbar">
                 <button class="canvas-btn" onclick="document.getElementById('imgInput').click()">📷 사진 추가</button>
                 <div style="width:1px; height:15px; background:#ccc; margin: 0 10px;"></div>
@@ -303,7 +318,7 @@
         };
         request.onsuccess = (e) => {
             db = e.target.result;
-            loadFromDB(); // DB 연결 후 데이터 로드
+            loadFromDB(); 
         };
         request.onerror = (e) => console.error("DB Error", e);
     }
@@ -317,7 +332,6 @@
             if (req.result) {
                 pages = req.result.data;
             } else {
-                // DB에 없으면 로컬스토리지 확인 (마이그레이션)
                 const localData = localStorage.getItem('my_project_v3_layer_dots');
                 if (localData) {
                     try { pages = JSON.parse(localData); } catch(e) { resetPages(); }
@@ -332,36 +346,21 @@
 
     function resetPages() { pages = [{ title: '🎨 비주얼 보드', type: 'canvas', content: [] }, { title: '📝 설정 노트', type: 'text', content: '# 프로젝트 설정\n' }]; }
 
-    // === 저장 로직 (IndexedDB) ===
     function saveAll() {
         if (curPageIndex === 0) pages[0].content = canvasItems;
         else pages[curPageIndex].content = textInput.value;
-
-        // 디바운싱: 너무 잦은 저장 방지
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(executeSave, 500);
     }
 
     function executeSave() {
         if(!db) return;
-        
-        // 저장 중 UI 표시
         saveIndicator.classList.add('saving');
-
         const tx = db.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
         const req = store.put({ id: 'my_project_data', data: pages });
-
-        req.onsuccess = () => {
-            // 저장 완료 후 UI 숨김 (최소 0.5초 보여줌)
-            setTimeout(() => {
-                saveIndicator.classList.remove('saving');
-            }, 500);
-        };
-        req.onerror = () => {
-            console.error("Save Failed");
-            saveIndicator.classList.remove('saving');
-        };
+        req.onsuccess = () => { setTimeout(() => { saveIndicator.classList.remove('saving'); }, 500); };
+        req.onerror = () => { saveIndicator.classList.remove('saving'); };
     }
 
     function renderTabs() {
@@ -378,12 +377,8 @@
         });
     }
     function switchPage(idx) { 
-        // 페이지 전환 전 현재 상태 저장
-        if (curPageIndex === 0) pages[0].content = canvasItems;
-        else pages[curPageIndex].content = textInput.value;
-        saveAll();
-
-        curPageIndex = idx; renderTabs(); loadPage(idx); 
+        if (curPageIndex === 0) pages[0].content = canvasItems; else pages[curPageIndex].content = textInput.value;
+        saveAll(); curPageIndex = idx; renderTabs(); loadPage(idx); 
     }
     function deletePage(e, idx) { e.stopPropagation(); if(confirm('삭제?')) { pages.splice(idx, 1); if(curPageIndex >= pages.length) curPageIndex = pages.length -1; saveAll(); renderTabs(); loadPage(curPageIndex); } }
 
@@ -402,8 +397,7 @@
     btnAddTab.onclick = () => { 
         if (curPageIndex === 0) pages[0].content = canvasItems; else pages[curPageIndex].content = textInput.value;
         pages.push({ title: `노트 ${pages.length}`, type: 'text', content: '' }); 
-        saveAll();
-        switchPage(pages.length - 1); 
+        saveAll(); switchPage(pages.length - 1); 
     };
 
     // === 캔버스 아이템 ===
@@ -423,7 +417,6 @@
             
             if(item.type === 'memo') el.style.padding = '20px';
             
-            // 모바일 터치 이벤트 바인딩 개선
             const startHandler = (e) => handleCanvasStart(e, item, el);
             el.onmousedown = startHandler; 
             el.ontouchstart = startHandler;
@@ -448,20 +441,26 @@
 
     function getMaxZ() { return Math.max(0, ...canvasItems.map(i => i.zIndex || 1)); }
 
+    // 메모 추가 (스크롤 위치 고려)
     function addMemoItem() { 
+        const currentScroll = canvasArea.scrollTop;
         canvasItems.push({ 
-            id: Date.now(), x: 100, y: 100, width: 260, height: 180, 
+            id: Date.now(), x: 100, y: currentScroll + 100, // 현재 보고 있는 위치 근처에 생성
+            width: 260, height: 180, 
             type: 'memo', title: '', content: '', color: '#fff9c4',
             zIndex: getMaxZ() + 1 
         }); 
         renderCanvasItems(); saveAll(); 
     }
     
+    // 이미지 추가 (스크롤 위치 고려)
     function addCanvasImage(input) {
         const file = input.files[0]; if(!file) return;
+        const currentScroll = canvasArea.scrollTop;
         const reader = new FileReader(); reader.onload = (e) => { 
             canvasItems.push({ 
-                id: Date.now(), x: 150, y: 150, width: 300, height: 0, 
+                id: Date.now(), x: 150, y: currentScroll + 150, // 현재 보고 있는 위치 근처에 생성
+                width: 300, height: 0, 
                 type: 'image', content: e.target.result,
                 zIndex: getMaxZ() + 1
             }); 
@@ -480,32 +479,19 @@
     const bgHandler = (e) => { if(e.target===canvasArea) { selectedId=null; renderCanvasItems(); } };
     canvasArea.onmousedown = bgHandler; canvasArea.ontouchstart = bgHandler;
 
-    // === 모바일 터치 드래그 핵심 수정 부분 ===
     function handleCanvasStart(e, item, element) {
-        // 입력창이나 설정창 터치 시에는 드래그 로직 무시
         if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('.config-panel') || e.target.classList.contains('resize-handle')) return;
-        
-        // 아이템 드래그 시 화면 스크롤 방지 (입력창 제외)
-        if(e.cancelable && !e.target.tagName.match(/INPUT|TEXTAREA/)) {
-             e.preventDefault(); 
-        }
-
+        if(e.cancelable && !e.target.tagName.match(/INPUT|TEXTAREA/)) { e.preventDefault(); }
         selectedId = item.id; draggedItem = item; isDragging = true;
-        
-        // 터치/마우스 좌표 통합
         const c = e.type.includes('touch') ? e.changedTouches[0] : e;
         startX = c.clientX; startY = c.clientY; 
         initialX = item.x; initialY = item.y;
-        
-        // 렌더링을 다시 해서 선택 효과 적용 + DOM 갱신
-        renderCanvasItems(); 
-        draggedDOM = document.getElementById(`item-${item.id}`);
+        renderCanvasItems(); draggedDOM = document.getElementById(`item-${item.id}`);
     }
 
     function startCanvasResize(e, id) {
         e.stopPropagation(); 
         if(e.type==='touchstart' && e.cancelable) e.preventDefault();
-
         resizeItem = canvasItems.find(i => i.id === id); resizeDOM = document.getElementById(`item-${id}`);
         const c = e.type.includes('touch') ? e.changedTouches[0] : e;
         startX = c.clientX; startY = c.clientY; initialW = resizeItem.width; initialH = resizeItem.height;
@@ -523,11 +509,7 @@
     dragHandle.onmousedown = startPanelDrag; dragHandle.ontouchstart = startPanelDrag;
 
     const onGlobalMove = (e) => {
-        // 드래그 중일 때는 화면 스크롤 무조건 방지
-        if ((isDragging || resizeItem || isPanelDragging) && e.cancelable) {
-            e.preventDefault();
-        }
-
+        if ((isDragging || resizeItem || isPanelDragging) && e.cancelable) { e.preventDefault(); }
         const c = e.type.includes('touch') ? e.changedTouches[0] : e;
         
         if(isDragging && curPageIndex === 0 && draggedItem && draggedDOM) {
@@ -551,7 +533,6 @@
         isDragging = false; draggedItem = null; resizeItem = null; draggedDOM = null; resizeDOM = null; isPanelDragging = false; 
     };
     
-    // passive: false를 주어 preventDefault가 작동하도록 설정
     window.addEventListener('mousemove', onGlobalMove); window.addEventListener('mouseup', onGlobalEnd);
     window.addEventListener('touchmove', onGlobalMove, {passive: false}); 
     window.addEventListener('touchend', onGlobalEnd);
@@ -592,7 +573,6 @@
     textInput.addEventListener('input', () => p.classList.add('faded'));
     textInput.addEventListener('keyup', () => setTimeout(() => p.classList.remove('faded'), 800));
 
-    // 앱 시작 (DB 초기화)
     initDB();
 </script>
 </body>
